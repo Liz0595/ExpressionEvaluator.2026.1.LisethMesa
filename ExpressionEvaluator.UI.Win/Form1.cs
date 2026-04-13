@@ -65,10 +65,11 @@ namespace ExpressionEvaluator.UI.Win
                 "4","5","6","*",
                 "1","2","3","-",
                 "0",".","=","+",
-                "Delete","Clear","(",")"
+                "Delete","Clear","(",")",
+                "^"
             };
             int btnIndex = 0;
-            for (int r = 0; r < 5; r++)
+            for (int r = 0; r < 6; r++)
             {
                 for (int c = 0; c < 4; c++)
                 {
