@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "ExpressionEvaluator.Core": {
+      "commandName": "Project"
+    },
+    "Perfil 1": {
+      "commandName": "Executable",
+      "executablePath": "C:\\Repos\\ExpressionEvaluator.2026.Liseth1\\ExpressionEvaluator.UI.Win\\Form1.cs"
+    }
+  }
+}

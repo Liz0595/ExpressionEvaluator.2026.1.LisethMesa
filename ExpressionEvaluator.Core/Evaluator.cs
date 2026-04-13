@@ -1,5 +1,7 @@
 ﻿namespace ExpressionEvaluator.Core;
 
+using System.Globalization;
+
 public class Evaluator
 {
     public static double Evaluate(string infix)
@@ -10,50 +12,74 @@ public class Evaluator
 
     private static string InfixToPostfix(string infix)
     {
-        var postFix = string.Empty;
-        var stack = new Stack<char>();
-        foreach (var item in infix)
+        var output = new Queue<string>();
+        var operators = new Stack<char>();
+        var numberBuffer = string.Empty;
+
+        for (int i = 0; i < infix.Length; i++)
         {
-            if (IsOperator(item))
+            var ch = infix[i];
+            if (char.IsWhiteSpace(ch))
+                continue;
+
+            if (char.IsDigit(ch) || ch == '.')
             {
-                if (stack.Count == 0)
+                
+                numberBuffer += ch;
+            }
+            else if (IsOperator(ch))
+            {
+                if (!string.IsNullOrEmpty(numberBuffer))
                 {
-                    stack.Push(item);
+                    output.Enqueue(numberBuffer);
+                    numberBuffer = string.Empty;
                 }
-                else
+
+                if (ch == '(')
                 {
-                    if (item == ')')
-                    {
-                        do
-                        {
-                            postFix += stack.Pop();
-                        } while (stack.Peek() != '(');
-                        stack.Pop();
-                    }
-                    else
-                    {
-                        if (PriorityInfix(item) > PriorityStack(stack.Peek()))
-                        {
-                            stack.Push(item);
-                        }
-                        else
-                        {
-                            postFix += stack.Pop();
-                            stack.Push(item);
-                        }
-                    }
+                    operators.Push(ch);
+                    continue;
                 }
+
+                if (ch == ')')
+                {
+                    while (operators.Count > 0 && operators.Peek() != '(')
+                        output.Enqueue(operators.Pop().ToString());
+
+                    if (operators.Count == 0)
+                        throw new Exception("Sintax error: mismatched parentheses.");
+
+                    operators.Pop();
+                    continue;
+                }
+
+            
+                while (operators.Count > 0 && PriorityStack(operators.Peek()) >= PriorityInfix(ch))
+                {
+                    output.Enqueue(operators.Pop().ToString());
+                }
+
+                operators.Push(ch);
             }
             else
             {
-                postFix += item;
+                // unknown character
+                throw new Exception($"Sintax error: invalid character '{ch}'.");
             }
         }
-        while (stack.Count > 0)
+
+        if (!string.IsNullOrEmpty(numberBuffer))
+            output.Enqueue(numberBuffer);
+
+        while (operators.Count > 0)
         {
-            postFix += stack.Pop();
+            var op = operators.Pop();
+            if (op == '(' || op == ')')
+                throw new Exception("Sintax error: mismatched parentheses.");
+            output.Enqueue(op.ToString());
         }
-        return postFix;
+
+        return string.Join(' ', output);
     }
 
     private static int PriorityStack(char item) => item switch
@@ -81,13 +107,15 @@ public class Evaluator
     private static double EvaluatePostfix(string postfix)
     {
         var stack = new Stack<double>();
-        foreach (char item in postfix)
+        var tokens = postfix.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        foreach (var token in tokens)
         {
-            if (IsOperator(item))
+            if (token.Length == 1 && IsOperator(token[0]) && token[0] != '(' && token[0] != ')')
             {
+                if (stack.Count < 2) throw new Exception("Sintax error");
                 var b = stack.Pop();
                 var a = stack.Pop();
-                stack.Push(item switch
+                stack.Push(token[0] switch
                 {
                     '+' => a + b,
                     '-' => a - b,
@@ -99,9 +127,14 @@ public class Evaluator
             }
             else
             {
-                stack.Push(double.Parse(item.ToString()));
+                // parseo
+                if (!double.TryParse(token, NumberStyles.Number, CultureInfo.InvariantCulture, out var value))
+                    throw new Exception($"Sintax error: invalid number '{token}'.");
+                stack.Push(value);
             }
         }
+
+        if (stack.Count != 1) throw new Exception("Sintax error: invalid expression.");
         return stack.Pop();
     }
 
